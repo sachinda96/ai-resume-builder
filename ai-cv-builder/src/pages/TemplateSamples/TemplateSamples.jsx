@@ -30,14 +30,6 @@ const sampleExperience = [
   },
 ];
 
-const sampleEducation = [
-  {
-    id: 'edu-1',
-    degree: 'B.Sc. Computer Science',
-    school: 'State University',
-    years: '2014 - 2018',
-  },
-];
 
 const sampleSkills = ['React', 'TypeScript', 'JavaScript'];
 

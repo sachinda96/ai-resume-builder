@@ -1,43 +1,35 @@
 import React, { Fragment, useMemo, useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 const defaultProfile = {
-  fullName: 'Alex Morgan',
-  role: 'Senior Frontend Engineer',
-  email: 'alex@example.com',
-  phone: '+1 (555) 000-0000',
-  linkedin: 'linkedin.com/in/alexmorgan',
-  location: 'San Francisco, CA',
-  summary:
-    'Experienced Frontend Engineer with 6+ years building scalable web applications. Proven track record of delivering high-performance React applications and leading cross-functional teams.',
+  fullName: '',
+  role: '',
+  email: '',
+  phone: '',
+  linkedin: '',
+  location: '',
+  summary: '',
 };
 
 const defaultExperience = [
   {
     id: 'exp-1',
-    title: 'Senior Frontend Engineer',
-    company: 'TechCorp Inc.',
-    start: 'Jan 2021',
-    end: 'Present',
-    description:
-      'Led development of a React-based design system used across 5 products.\nReduced page load time by 40% through code splitting and lazy loading.\nMentored 3 junior engineers and conducted weekly code reviews.',
-  },
-  {
-    id: 'exp-2',
-    title: 'Frontend Developer',
-    company: 'StartupXYZ',
-    start: 'Jun 2018',
-    end: 'Dec 2020',
-    description: 'Built and maintained Vue.js SPA with 50K monthly users. Integrated REST APIs.',
+    title: '',
+    company: '',
+    start: '',
+    end: '',
+    description: '',
   },
 ];
 
 const defaultEducation = [
   {
     id: 'edu-1',
-    degree: 'B.Sc. Computer Science',
-    school: 'State University',
-    years: '2014 - 2018',
+    degree: '',
+    school: '',
+    years: '',
   },
 ];
 
@@ -61,7 +53,7 @@ const stepConfig = [
 ];
 
 export default function CvBuilder() {
-  const [activeStep, setActiveStep] = useState(3);
+  const [activeStep, setActiveStep] = useState(1);
   const [selectedTemplate, setSelectedTemplate] = useState(templates[0].id);
   const [profile, setProfile] = useState(defaultProfile);
   const [experience, setExperience] = useState(defaultExperience);
@@ -130,92 +122,49 @@ export default function CvBuilder() {
     window.setTimeout(() => setToast(null), 2500);
   };
 
-  const downloadCv = () => {
+  const enhanceWithAI = (section, id) => {
+    showToast(`Enhance with AI triggered for ${section}${id ? ` (id: ${id})` : ''}`, 'success');
+    // TODO: integrate with AI summary/experience API for text rewrite suggestions.
+  };
+
+  const downloadCv = async () => {
     const previewEl = document.getElementById('cv-preview');
-    if (!previewEl) return;
+    if (!previewEl) {
+      showToast('CV preview not available for download', 'error');
+      return;
+    }
 
-    const templateStyles = {
-      'template-1': {
-        headerBg: '#1a1a2e',
-        headerText: '#fff',
-        sectionTitle: '#e94560',
-        bullet: '▸',
-        bulletColor: '#e94560',
-        contactColor: 'rgba(255,255,255,0.6)',
-      },
-      'template-2': {
-        headerBg: '#f4f6fb',
-        headerText: '#1a1a2e',
-        sectionTitle: '#0f3460',
-        bullet: '▹',
-        bulletColor: '#0f3460',
-        contactColor: 'rgba(26,26,46,0.75)',
-      },
-      'template-3': {
-        headerBg: 'linear-gradient(135deg, #1e3a8a, #9333ea)',
-        headerText: '#fff',
-        sectionTitle: '#ffb703',
-        bullet: '•',
-        bulletColor: '#ffb703',
-        contactColor: 'rgba(255,255,255,0.7)',
-      },
-      'template-4': {
-        headerBg: '#ffffff',
-        headerText: '#1a1a2e',
-        sectionTitle: '#5a5a72',
-        bullet: '▹',
-        bulletColor: '#5a5a72',
-        contactColor: 'rgba(26,26,46,0.75)',
-      },
-      'template-5': {
-        headerBg: '#0f3460',
-        headerText: '#fff',
-        sectionTitle: '#f5a623',
-        bullet: '▸',
-        bulletColor: '#f5a623',
-        contactColor: 'rgba(255,255,255,0.7)',
-      },
-    };
+    try {
+      showToast('Preparing download...', 'success');
+      const canvas = await html2canvas(previewEl, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('portrait', 'mm', 'a4');
 
-    const tmpl = templateStyles[selectedTemplate] || templateStyles['template-1'];
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 0;
+      const imgWidth = pageWidth - margin * 2;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-    const html = `
-      <html>
-        <head>
-          <meta charset="utf-8" />
-          <title>${profile.fullName} - CV</title>
-          <style>
-            body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Segoe UI Emoji', 'Segoe UI Symbol', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; background: #f3f3f3; }
-            .cv-preview-paper { background: #fff; width: 100%; max-width: 800px; margin: 2rem auto; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); overflow: hidden; }
-            .cv-preview-header { background: ${tmpl.headerBg}; padding: 2rem 2rem 1.5rem; }
-            .cv-name { font-family: 'Syne', sans-serif; font-size: 1.6rem; font-weight: 800; color: ${tmpl.headerText}; margin: 0; }
-            .cv-role { font-size: 0.9rem; color: rgba(255,255,255,0.7); margin-top: 3px; }
-            .cv-contact { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 1rem; }
-            .cv-contact-item { font-size: 0.75rem; color: ${tmpl.contactColor}; display: flex; align-items: center; gap: 6px; }
-            .cv-preview-body { padding: 1.5rem; }
-            .cv-section { margin-bottom: 1.5rem; }
-            .cv-section-title { font-family: 'Syne', sans-serif; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: ${tmpl.sectionTitle}; border-bottom: 1px solid rgba(26,26,46,0.1); padding-bottom: 4px; margin-bottom: 0.75rem; }
-            .cv-section-body { font-size: 0.8rem; color: rgba(26,26,46,0.7); line-height: 1.6; }
-            .cv-exp { margin-bottom: 0.875rem; }
-            .cv-exp-title { font-weight: 600; font-size: 0.85rem; color: rgba(26,26,46,0.9); }
-            .cv-exp-co { font-size: 0.78rem; color: rgba(90,90,114,0.9); }
-            .cv-exp-date { font-size: 0.72rem; color: rgba(153,153,176,0.8); margin-bottom: 4px; }
-            .cv-bullet { display: flex; gap: 6px; font-size: 0.78rem; color: rgba(90,90,114,0.9); margin-bottom: 3px; }
-            .cv-bullet::before { content: '${tmpl.bullet}'; color: ${tmpl.bulletColor}; flex-shrink: 0; }
-            .cv-skill-tags { display: flex; flex-wrap: wrap; gap: 5px; }
-            .cv-skill-tag { background: rgba(26,26,46,0.08); border-radius: 100px; padding: 3px 10px; font-size: 0.72rem; color: rgba(26,26,46,0.8); }
-          </style>
-        </head>
-        <body>${previewEl.innerHTML}</body>
-      </html>
-    `;
+      let heightLeft = imgHeight;
+      let position = margin;
 
-    const w = window.open('', '_blank');
-    if (!w) return;
-    w.document.write(html);
-    w.document.close();
-    w.focus();
-    w.print();
+      pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight - 2 * margin;
+
+      while (heightLeft > 0) {
+        position = -(imgHeight - (pageHeight - 2 * margin));
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight - 2 * margin;
+      }
+
+      pdf.save(`${profile.fullName.replace(/\s+/g, '_')}_CV.pdf`);
+      showToast('Download started', 'success');
+    } catch (error) {
+      console.error('Download CV failed', error);
+      showToast('Download failed, please try again', 'error');
+    }
   };
 
   const renderStepContent = () => {
@@ -227,31 +176,61 @@ export default function CvBuilder() {
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Full Name</label>
-                <input className="form-input" value={profile.fullName} onChange={updateProfile('fullName')} />
+                <input
+                  className="form-input"
+                  value={profile.fullName}
+                  onChange={updateProfile('fullName')}
+                  placeholder="e.g. Alex Morgan"
+                />
               </div>
               <div className="form-group">
                 <label className="form-label">Role / Title</label>
-                <input className="form-input" value={profile.role} onChange={updateProfile('role')} />
+                <input
+                  className="form-input"
+                  value={profile.role}
+                  onChange={updateProfile('role')}
+                  placeholder="e.g. Senior Frontend Engineer"
+                />
               </div>
             </div>
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Email</label>
-                <input className="form-input" value={profile.email} onChange={updateProfile('email')} />
+                <input
+                  className="form-input"
+                  value={profile.email}
+                  onChange={updateProfile('email')}
+                  placeholder="e.g. alex@example.com"
+                />
               </div>
               <div className="form-group">
                 <label className="form-label">Phone</label>
-                <input className="form-input" value={profile.phone} onChange={updateProfile('phone')} />
+                <input
+                  className="form-input"
+                  value={profile.phone}
+                  onChange={updateProfile('phone')}
+                  placeholder="e.g. +1 (555) 000-0000"
+                />
               </div>
             </div>
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">LinkedIn</label>
-                <input className="form-input" value={profile.linkedin} onChange={updateProfile('linkedin')} />
+                <input
+                  className="form-input"
+                  value={profile.linkedin}
+                  onChange={updateProfile('linkedin')}
+                  placeholder="e.g. linkedin.com/in/alexmorgan"
+                />
               </div>
               <div className="form-group">
                 <label className="form-label">Location</label>
-                <input className="form-input" value={profile.location} onChange={updateProfile('location')} />
+                <input
+                  className="form-input"
+                  value={profile.location}
+                  onChange={updateProfile('location')}
+                  placeholder="e.g. San Francisco, CA"
+                />
               </div>
             </div>
           </>
@@ -261,16 +240,20 @@ export default function CvBuilder() {
           <>
             <div className="form-section-title">📝 Professional Summary</div>
             <div className="form-group form-row full">
-              <label className="form-label">Summary</label>
-              <textarea
-                className="form-input"
-                rows={5}
-                value={profile.summary}
-                onChange={updateProfile('summary')}
-              />
-            </div>
-          </>
-        );
+                <label className="form-label">Summary</label>
+                <textarea
+                  className="form-input"
+                  rows={5}
+                  value={profile.summary}
+                  onChange={updateProfile('summary')}
+                  placeholder="Write a short professional summary, e.g. 6+ years building reactive front-end apps..."
+                />
+              </div>
+              <button className="btn btn-sm btn-secondary" onClick={() => enhanceWithAI('summary')} type="button">
+                Enhance with AI
+              </button>
+            </>
+          );
       case 3:
         return (
           <>
@@ -307,8 +290,16 @@ export default function CvBuilder() {
                     rows={4}
                     value={item.description}
                     onChange={updateExperience(item.id, 'description')}
+                    placeholder="Describe your achievement and responsibilities. Use bullet-style sentences for readability."
                   />
                 </div>
+                <button
+                  className="btn btn-sm btn-secondary"
+                  onClick={() => enhanceWithAI('experience', item.id)}
+                  type="button"
+                >
+                  Enhance with AI
+                </button>
               </div>
             ))}
             <button className="add-entry-btn" onClick={addExperience} type="button">
@@ -447,39 +438,23 @@ export default function CvBuilder() {
         <div className="builder-header">
           <div>
             <h2>Software Engineer CV</h2>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.4rem' }}>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>Template:</span>
-              <select
-                value={selectedTemplate}
-                onChange={(e) => setSelectedTemplate(e.target.value)}
-                style={{
-                  padding: '6px 10px',
-                  borderRadius: '8px',
-                  border: '1px solid var(--border)',
-                  background: 'var(--surface)',
-                  color: 'var(--text)',
-                  fontSize: '0.75rem',
-                }}
-              >
-                {templates.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-              <button
-                className="btn btn-sm btn-ghost"
-                onClick={() => navigate('/dashboard/templates')}
-                type="button"
-              >
-                Browse Templates
-              </button>
-            </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div className="save-status">
               <div className="save-dot" /> Saved
             </div>
+            <button
+              className="btn btn-sm btn-ghost"
+              onClick={() => {
+                const currentIndex = templates.findIndex((t) => t.id === selectedTemplate);
+                const nextTemplate = templates[(currentIndex + 1) % templates.length];
+                setSelectedTemplate(nextTemplate.id);
+                showToast(`Template changed to ${nextTemplate.name}`, 'success');
+              }}
+              type="button"
+            >
+              Change Template
+            </button>
             <button className="btn btn-sm btn-primary" onClick={downloadCv} type="button">
               ↓ Download
             </button>
@@ -522,8 +497,8 @@ export default function CvBuilder() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
             <span style={{ fontSize: '0.8rem', color: 'var(--text2)' }}>Live Preview</span>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button className="btn btn-sm btn-secondary" onClick={() => showToast('Preview copied', 'success')} type="button">
-                Copy
+              <button className="btn btn-sm btn-ghost" onClick={() => navigate('/dashboard/templates')} type="button">
+                Browse Templates
               </button>
               <button className="btn btn-sm btn-primary" onClick={downloadCv} type="button">
                 ↓ Download
